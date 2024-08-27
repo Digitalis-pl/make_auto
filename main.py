@@ -18,6 +18,7 @@ dp = Dispatcher()
 async def main():
     await db.create_table_user()
     await db.create_table_connections()
+    await db.create_make_client_list()
     dp.include_router(router)
     await dp.start_polling(bot)
 

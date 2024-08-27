@@ -7,3 +7,8 @@ class UInfo(StatesGroup):
     ClientSecrets = State()
 
 
+class UserInfoForMake(StatesGroup):
+    make_url = State()
+    user_team_id = State()
+    user_organisation_id = State()
+    token = State()

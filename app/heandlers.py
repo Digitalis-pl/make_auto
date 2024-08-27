@@ -2,12 +2,13 @@ import os
 
 from aiogram import F, Router
 from aiogram.filters import CommandStart, Command
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 from aiogram.utils import keyboard
 from aiogram.fsm.context import FSMContext
 
-from .keyboerds import app_keyboard, button_to_add_accs, services_keyboard
-from .state import UInfo
+from .keyboerds import app_keyboard, button_to_add_accs, services_keyboard, create_connection_keyboard, \
+    create_scenario_keyboard, push_button, make_acc, start_keyboard
+from .state import UInfo, UserInfoForMake
 from data.services import Database
 from .services import CreateConnections
 
@@ -19,21 +20,65 @@ router = Router()
 
 db = Database(os.getenv('SQLite_DB_NAME'))
 
-service_urls = {'instagram': 'https://developers.facebook.com/', 'google-drive': 'https://console.cloud.google.com', 'youtube': 'https://console.cloud.google.com', 'tiktok': 'https://developers.tiktok.com/'}
+service_urls = {'instagram': 'https://developers.facebook.com/', 'google-drive': 'https://console.cloud.google.com',
+                'youtube': 'https://console.cloud.google.com', 'tiktok': 'https://developers.tiktok.com/'}
 
 
 @router.message(CommandStart())
 async def cm_start(message: Message):
-    await message.answer('Начало работы', reply_markup=app_keyboard)
+    await message.answer('Для работы вам необходим аккаунт в https://www.make.com', reply_markup=make_acc)
 
 
-@router.message(Command('help'))
-async def cm_someinfo(message: Message):
-    kb = keyboard.InlineKeyboardBuilder()
-    el = [1, 2, 3, 4]
-    for n in el:
-        kb.add(keyboard.InlineKeyboardButton(text=str(n), callback_data=str(n)))
-    await message.answer('чем могу помочь?', reply_markup=kb.as_markup())
+@router.message(F.text == 'Уже есть аккаунт в Make')
+async def take_make_info(message: Message, state: FSMContext):
+    await state.set_state(UserInfoForMake.make_url.state)
+    await message.answer(
+        """ведите url для соединения с вашим аккаунтом вы можете скопировать его в адресной строке
+         (пример:https://eu2.make.com/... необходима только эта часть)""", reply_markup=ReplyKeyboardRemove())
+
+
+@router.message(UserInfoForMake.make_url)
+async def write_make_url(message: Message, state: FSMContext):
+    await state.update_data(make_url=message.text)
+    await state.set_state(UserInfoForMake.user_team_id.state)
+    await message.answer('Введите teamId')
+
+
+@router.message(UserInfoForMake.user_team_id)
+async def write_make_team_id(message: Message, state: FSMContext):
+    await state.update_data(user_team_id=message.text)
+    await state.set_state(UserInfoForMake.user_organisation_id.state)
+    await message.answer('Введите user_organisation_id')
+
+
+@router.message(UserInfoForMake.user_organisation_id)
+async def write_make_organisation_id(message: Message, state: FSMContext):
+    await state.update_data(user_organisation_id=message.text)
+    await state.set_state(UserInfoForMake.token.state)
+    await message.answer('Введите api token')
+
+
+@router.message(UserInfoForMake.token)
+async def write_make_token(message: Message, state: FSMContext):
+    await state.update_data(token=message.text)
+    data = await state.get_data()
+    data['user_id'] = message.from_user.id
+    await db.insert_make_table(**data)
+    await state.clear()
+    await message.answer(
+        'Данные аккаунта записаны, вы можете посмотреть всю информацию при нажатии кнопки Make аккаунт',
+        reply_markup=start_keyboard)
+
+
+@router.message(F.text == 'Make аккаунт')
+async def show_make_settings(message: Message):
+    data = await db.show_make_info(message.from_user.id)
+    await message.answer(f'Ваши настройки:\n{data}')
+
+
+@router.message(F.text == 'Загрузить контент')
+async def start_work_with_content(message: Message):
+    await message.answer('Загрузите фотографию', reply_markup=ReplyKeyboardRemove())
 
 
 @router.callback_query(F.data == 'services_list')
@@ -44,7 +89,6 @@ async def input_services(callback: CallbackQuery, state: FSMContext):
 
 @router.message(UInfo.service)
 async def input_services(message: Message, state: FSMContext):
-    data = None
     if message.text == 'сохранить':
         await state.clear()
         await message.answer(f'ответ записан ваши аккаунты:', reply_markup=app_keyboard)
@@ -60,7 +104,7 @@ async def input_services(message: Message, state: FSMContext):
         await state.update_data(service=message.text)
         data = await state.get_data()
     await message.answer(
-        f'введите Client secret для {data['services']}\nИли создайте его в {service_urls[message.text]}')
+        f'введите Client secret message.text\nИли создайте его в {service_urls[message.text]}')
     await state.set_state(UInfo.ClientSecrets.state)
 
 
@@ -88,32 +132,10 @@ async def photo_info(message: Message):
                                reply_markup=button_to_add_accs)
 
 
-@router.callback_query(F.data == 'youtube')
-async def send_random_value(callback: CallbackQuery):
-    await callback.message.answer('youtube')
-
-
-@router.callback_query(F.data == 'tik/tok')
-async def send_random_value(callback: CallbackQuery):
-    await callback.message.answer('tik/tok')
-
-
-@router.callback_query(F.data == 'instagram')
-async def send_random_value(callback: CallbackQuery):
-    await callback.message.answer('instagram')
-
-
 @router.message(F.text == 'показать аккаунты')
 async def show_settings(message: Message):
     data = await db.show_info(message.from_user.id)
     await message.answer(f'Ваши настройки:\n{data}')
-
-
-@router.message(F.text == 'запостить')
-async def push_content(message: Message):
-    data = await db.show_info(message.from_user.id)
-    await message.answer(f'Осталось отправить:\n{data}')
-    await db.truncate_table(message.from_user.id)
 
 
 @router.message(F.text == 'изменить')
@@ -121,3 +143,42 @@ async def push_content(message: Message, state: FSMContext):
     await db.truncate_table(message.from_user.id)
     await message.answer(f'Выберите сервисы ', reply_markup=services_keyboard)
     await state.set_state(UInfo.service.state)
+
+
+@router.message(F.text == 'Готово')
+async def push_content(message: Message):
+    """Будет отправлять данные и контент боту публикатору"""
+    await message.answer(f'Данные записаны, теперь создадим соединения',
+                         reply_markup=create_connection_keyboard)
+
+
+@router.message(F.text == 'Создать соединения')
+async def push_content(message: Message):
+    """Будет отправлять запрос на создание соединений и записывать х в базу соединений"""
+    data = {}
+    await message.answer(f'Соединения успешно созданы\nваш список id:{data}\nСоздайте сценарий',
+                         reply_markup=create_scenario_keyboard)
+
+
+@router.message(F.text == 'Создать сценарий')
+async def push_content(message: Message):
+    """Будет формировать чертеж и отправлять запрос на создание сценария"""
+    await message.answer(f'Сценарий создан, можно загружать контент',
+                         reply_markup=push_button)
+
+
+@router.message(F.text == 'выгрузить контент')
+async def push_content(message: Message):
+    """Будет отправлять запрос на запуск сценария и отправлять данные и контент боту публикатору"""
+    await message.answer(f'Данные отправлены, список сервисов отчищен, вы можете создать новый контент')
+    await db.truncate_table(message.from_user.id)
+    await message.answer('Загрузите фотографию', reply_markup=ReplyKeyboardRemove())
+
+
+@router.message(Command('help'))
+async def cm_someinfo(message: Message):
+    kb = keyboard.InlineKeyboardBuilder()
+    el = [1, 2, 3, 4]
+    for n in el:
+        kb.add(keyboard.InlineKeyboardButton(text=str(n), callback_data=str(n)))
+    await message.answer('чем могу помочь?', reply_markup=kb.as_markup())

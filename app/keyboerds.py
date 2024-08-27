@@ -2,10 +2,32 @@ from aiogram.types import (ReplyKeyboardMarkup, KeyboardButton,
                            InlineKeyboardButton, InlineKeyboardMarkup)
 
 
+start_keyboard = ReplyKeyboardMarkup(keyboard=[
+    [KeyboardButton(text='Make аккаунт')],
+    [KeyboardButton(text='Загрузить контент')]], resize_keyboard=True, input_field_placeholder='menu')
+
+
 app_keyboard = ReplyKeyboardMarkup(keyboard=[
-    [KeyboardButton(text='запостить контент', callback_data='push')],
-    [KeyboardButton(text='показать аккаунты', callback_data='show_content'),
-     KeyboardButton(text='изменить', callback_data='change')]
+    [KeyboardButton(text='Make аккаунт')],
+    [KeyboardButton(text='Готово')],
+    [KeyboardButton(text='показать аккаунты'),
+     KeyboardButton(text='изменить')]
+], resize_keyboard=True, input_field_placeholder='menu')
+
+create_connection_keyboard = ReplyKeyboardMarkup(keyboard=[
+    [KeyboardButton(text='Создать соединения')]
+], resize_keyboard=True)
+
+create_scenario_keyboard = ReplyKeyboardMarkup(keyboard=[
+    [KeyboardButton(text='Создать сценарий')]
+], resize_keyboard=True)
+
+push_button = ReplyKeyboardMarkup(keyboard=[
+    [KeyboardButton(text='выгрузить контент')]
+], resize_keyboard=True)
+
+make_acc = ReplyKeyboardMarkup(keyboard=[
+    [KeyboardButton(text='Уже есть аккаунт в Make')],
 ], resize_keyboard=True, input_field_placeholder='menu')
 
 button_to_add_accs = InlineKeyboardMarkup(inline_keyboard=[
