@@ -6,11 +6,11 @@ from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 from aiogram.utils import keyboard
 from aiogram.fsm.context import FSMContext
 
-from .keyboerds import app_keyboard, button_to_add_accs, services_keyboard, create_connection_keyboard, \
-    create_scenario_keyboard, push_button, make_acc, start_keyboard
+from .keyboerds import (app_keyboard, button_to_add_accs, services_keyboard,
+                        create_connection_keyboard, create_scenario_keyboard,
+                        push_button, make_acc, start_keyboard)
 from .state import UInfo, UserInfoForMake
 from data.services import Database
-from .services import CreateConnections
 
 from dotenv import load_dotenv
 
@@ -24,9 +24,15 @@ service_urls = {'instagram': 'https://developers.facebook.com/', 'google-drive':
                 'youtube': 'https://console.cloud.google.com', 'tiktok': 'https://developers.tiktok.com/'}
 
 
+# стартовая команда
+
+
 @router.message(CommandStart())
 async def cm_start(message: Message):
     await message.answer('Для работы вам необходим аккаунт в https://www.make.com', reply_markup=make_acc)
+
+
+# Блок для заполнения информации об аккаунте make
 
 
 @router.message(F.text == 'Уже есть аккаунт в Make')
@@ -76,9 +82,15 @@ async def show_make_settings(message: Message):
     await message.answer(f'Ваши настройки:\n{data}')
 
 
+# Начало работы с контентом
+
+
 @router.message(F.text == 'Загрузить контент')
 async def start_work_with_content(message: Message):
     await message.answer('Загрузите фотографию', reply_markup=ReplyKeyboardRemove())
+
+
+# Выбор и заполнение данных об аккаунтах пользователя
 
 
 @router.callback_query(F.data == 'services_list')
@@ -91,45 +103,106 @@ async def input_services(callback: CallbackQuery, state: FSMContext):
 async def input_services(message: Message, state: FSMContext):
     if message.text == 'сохранить':
         await state.clear()
-        await message.answer(f'ответ записан ваши аккаунты:', reply_markup=app_keyboard)
+        await message.answer(f'Ответ записан ваши аккаунты:', reply_markup=app_keyboard)
     elif message.text == 'instagram':
         await state.update_data(service=message.text)
-        data = await state.get_data()
+        await state.set_state(UInfo.fb_inst_page_id.state)
+        await message.answer(
+            f'Введите id вашей страницы в {message.text}')
     elif message.text == 'google-drive':
         await state.update_data(service=message.text)
+        await state.set_state(UInfo.client_secrets.state)
+        await message.answer(
+            f'Введите Client secret message.text\nИли создайте его в {service_urls[message.text]}')
     elif message.text == 'youtube':
         await state.update_data(service=message.text)
-        data = await state.get_data()
+        await state.set_state(UInfo.yt_channel_id.state)
+        await message.answer(f'Введите Введите вашего канала на {message.text}')
     elif message.text == 'tiktok':
         await state.update_data(service=message.text)
-        data = await state.get_data()
-    await message.answer(
-        f'введите Client secret message.text\nИли создайте его в {service_urls[message.text]}')
-    await state.set_state(UInfo.ClientSecrets.state)
+        await state.set_state(UInfo.tt_account_id.state)
+        await message.answer(f'Введите вашего канала на {message.text}')
+    elif message.text == 'telegram':
+        await state.update_data(service=message.text)
+        await state.set_state(UInfo.tg_chat_id.state)
+        await message.answer(f'Введите id чата вашего канала в {message.text}')
 
 
-@router.message(UInfo.ClientSecrets)
+# instagram, facebook
+@router.message(UInfo.fb_inst_page_id)
 async def input_secrets(message: Message, state: FSMContext):
-    await state.update_data(ClientSecrets=message.text)
-    await message.answer(f'введите Client ID')
-    await state.set_state(UInfo.clientID.state)
+    await state.update_data(fb_inst_page_id=message.text)
+    data = await state.get_data()
+    await message.answer(f'введите Client secret {data['service']}\nИли создайте его в {service_urls[data['service']]}')
+    await state.set_state(UInfo.client_secrets.state)
 
 
-@router.message(UInfo.clientID)
-async def input_client_id(message: Message, state: FSMContext):
-    await state.update_data(clientID=message.text)
+# youtube
+@router.message(UInfo.yt_channel_id)
+async def input_secrets(message: Message, state: FSMContext):
+    await state.update_data(yt_channel_id=message.text)
+    data = await state.get_data()
+    await message.answer(f'введите Client secret {data['service']}\nИли создайте его в {service_urls[data['service']]}')
+    await state.set_state(UInfo.client_secrets.state)
+
+
+# tiktok
+@router.message(UInfo.tt_account_id)
+async def input_secrets(message: Message, state: FSMContext):
+    await state.update_data(tt_account_id=message.text)
+    data = await state.get_data()
+    await message.answer(f'введите Client secret {data['service']}\nИли создайте его в {service_urls[data['service']]}')
+    await state.set_state(UInfo.client_secrets.state)
+
+
+# telegram
+@router.message(UInfo.tg_chat_id)
+async def input_secrets(message: Message, state: FSMContext):
+    await state.update_data(tg_chat_id=message.text)
+    await message.answer(f'введите ваш bot token')
+    await state.set_state(UInfo.tg_bot_token.state)
+
+
+@router.message(UInfo.tg_bot_token)
+async def input_secrets(message: Message, state: FSMContext):
+    await state.update_data(tg_bot_token=message.text)
     data = await state.get_data()
     data['user_id'] = message.from_user.id
     await db.insert_table(**data)
-    await state.update_data(ClientSecrets=None)
+    await state.set_data({})
     await message.answer(f'ответ записан, хотите добавить дополнительный сервис')
     await state.set_state(UInfo.service.state)
+
+
+# Дальше общие шаги для получения client_secrets и client_id
+@router.message(UInfo.client_secrets)
+async def input_secrets(message: Message, state: FSMContext):
+    await state.update_data(client_secrets=message.text)
+    await message.answer(f'введите Client ID')
+    await state.set_state(UInfo.client_id.state)
+
+
+@router.message(UInfo.client_id)
+async def input_client_id(message: Message, state: FSMContext):
+    await state.update_data(client_id=message.text)
+    data = await state.get_data()
+    data['user_id'] = message.from_user.id
+    await db.insert_table(**data)
+    await state.set_data({})
+    await message.answer(f'ответ записан, хотите добавить дополнительный сервис')
+    await state.set_state(UInfo.service.state)
+
+
+# часть которая как будто создает контент
 
 
 @router.message(F.photo)
 async def photo_info(message: Message):
     await message.answer_photo(photo=message.photo[-1].file_id,
                                reply_markup=button_to_add_accs)
+
+
+# Блок для проверки и изменения введенных данных
 
 
 @router.message(F.text == 'показать аккаунты')
@@ -143,6 +216,9 @@ async def push_content(message: Message, state: FSMContext):
     await db.truncate_table(message.from_user.id)
     await message.answer(f'Выберите сервисы ', reply_markup=services_keyboard)
     await state.set_state(UInfo.service.state)
+
+
+# Блок для взаимодействия с make api
 
 
 @router.message(F.text == 'Готово')
@@ -173,12 +249,3 @@ async def push_content(message: Message):
     await message.answer(f'Данные отправлены, список сервисов отчищен, вы можете создать новый контент')
     await db.truncate_table(message.from_user.id)
     await message.answer('Загрузите фотографию', reply_markup=ReplyKeyboardRemove())
-
-
-@router.message(Command('help'))
-async def cm_someinfo(message: Message):
-    kb = keyboard.InlineKeyboardBuilder()
-    el = [1, 2, 3, 4]
-    for n in el:
-        kb.add(keyboard.InlineKeyboardButton(text=str(n), callback_data=str(n)))
-    await message.answer('чем могу помочь?', reply_markup=kb.as_markup())

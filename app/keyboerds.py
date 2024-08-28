@@ -35,8 +35,7 @@ button_to_add_accs = InlineKeyboardMarkup(inline_keyboard=[
 ])
 
 services_keyboard = ReplyKeyboardMarkup(keyboard=[
-    [KeyboardButton(text='tiktok'), KeyboardButton(text='google-drive')],
-    [KeyboardButton(text='instagram'),
-     KeyboardButton(text='youtube')],
+    [KeyboardButton(text='tiktok'), KeyboardButton(text='google-drive'), KeyboardButton(text='instagram')],
+    [KeyboardButton(text='youtube'), KeyboardButton(text='telegram')],
     [KeyboardButton(text='сохранить')]
 ], resize_keyboard=True, input_field_placeholder='menu')
