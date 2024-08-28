@@ -111,13 +111,12 @@ async def input_services(message: Message, state: FSMContext):
             f'Введите id вашей страницы в {message.text}')
     elif message.text == 'google-drive':
         await state.update_data(service=message.text)
-        await state.set_state(UInfo.client_secrets.state)
-        await message.answer(
-            f'Введите Client secret message.text\nИли создайте его в {service_urls[message.text]}')
+        await state.set_state(UInfo.gd_folder_id.state)
+        await message.answer('Введите id папки в которую будет загружаться контент')
     elif message.text == 'youtube':
         await state.update_data(service=message.text)
         await state.set_state(UInfo.yt_channel_id.state)
-        await message.answer(f'Введите Введите вашего канала на {message.text}')
+        await message.answer(f'Введите вашего канала на {message.text}')
     elif message.text == 'tiktok':
         await state.update_data(service=message.text)
         await state.set_state(UInfo.tt_account_id.state)
@@ -128,12 +127,21 @@ async def input_services(message: Message, state: FSMContext):
         await message.answer(f'Введите id чата вашего канала в {message.text}')
 
 
+# google-drive
+@router.message(UInfo.gd_folder_id)
+async def input_secrets(message: Message, state: FSMContext):
+    await state.update_data(gd_folder_id=message.text)
+    data = await state.get_data()
+    await message.answer(f'Введите Client secret {data['service']}\nИли создайте его в {service_urls[data['service']]}')
+    await state.set_state(UInfo.client_secrets.state)
+
+
 # instagram, facebook
 @router.message(UInfo.fb_inst_page_id)
 async def input_secrets(message: Message, state: FSMContext):
     await state.update_data(fb_inst_page_id=message.text)
     data = await state.get_data()
-    await message.answer(f'введите Client secret {data['service']}\nИли создайте его в {service_urls[data['service']]}')
+    await message.answer(f'Введите Client secret {data['service']}\nИли создайте его в {service_urls[data['service']]}')
     await state.set_state(UInfo.client_secrets.state)
 
 
@@ -142,7 +150,7 @@ async def input_secrets(message: Message, state: FSMContext):
 async def input_secrets(message: Message, state: FSMContext):
     await state.update_data(yt_channel_id=message.text)
     data = await state.get_data()
-    await message.answer(f'введите Client secret {data['service']}\nИли создайте его в {service_urls[data['service']]}')
+    await message.answer(f'Введите Client secret {data['service']}\nИли создайте его в {service_urls[data['service']]}')
     await state.set_state(UInfo.client_secrets.state)
 
 
@@ -151,7 +159,7 @@ async def input_secrets(message: Message, state: FSMContext):
 async def input_secrets(message: Message, state: FSMContext):
     await state.update_data(tt_account_id=message.text)
     data = await state.get_data()
-    await message.answer(f'введите Client secret {data['service']}\nИли создайте его в {service_urls[data['service']]}')
+    await message.answer(f'Введите Client secret {data['service']}\nИли создайте его в {service_urls[data['service']]}')
     await state.set_state(UInfo.client_secrets.state)
 
 
@@ -159,7 +167,7 @@ async def input_secrets(message: Message, state: FSMContext):
 @router.message(UInfo.tg_chat_id)
 async def input_secrets(message: Message, state: FSMContext):
     await state.update_data(tg_chat_id=message.text)
-    await message.answer(f'введите ваш bot token')
+    await message.answer(f'Введите ваш bot token')
     await state.set_state(UInfo.tg_bot_token.state)
 
 
