@@ -3,6 +3,30 @@ import pprint
 
 import requests
 
+from main import db
+
+import os
+
+from aiogram import F, Router
+from aiogram.filters import CommandStart
+from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
+from aiogram.utils import keyboard
+from aiogram.fsm.context import FSMContext
+
+from .keyboerds import (app_keyboard, button_to_add_accs, services_keyboard,
+                        create_connection_keyboard, create_scenario_keyboard,
+                        push_button, make_acc, start_keyboard)
+from .state import UInfo, UserInfoForMake, TemporaryData
+from data.services import Database
+
+from dotenv import load_dotenv
+"""Убрать"""
+def create_keyboard(el_list):
+    builder = keyboard.ReplyKeyboardBuilder()
+    for el in el_list:
+        builder.add(keyboard.KeyboardButton(text=el['akk_name']))
+    return builder
+
 
 class CreateConnections:
 
@@ -202,4 +226,12 @@ def create_blueprint(flow):
     return blueprint
 
 
-pprint.pprint(create_blueprint(form_flow(test_data)))
+class InsertionModule:
+
+    def __init__(self, service, state):
+        self.service = service
+        self.state = state
+
+    def insert_data(self):
+        data = self.state.get_data()
+        return db.insert_service_data(self.service, **data)

@@ -19,6 +19,13 @@ async def main():
     await db.create_table_user()
     await db.create_table_connections()
     await db.create_make_client_list()
+    await db.create_make_client()
+    await db.create_ig_table()
+    await db.create_fb_table()
+    await db.create_tg_table()
+    await db.create_tt_table()
+    await db.create_gd_table()
+    await db.create_yt_table()
     dp.include_router(router)
     await dp.start_polling(bot)
 

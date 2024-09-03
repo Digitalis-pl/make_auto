@@ -6,6 +6,9 @@ start_keyboard = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Make аккаунт')],
     [KeyboardButton(text='Загрузить контент')]], resize_keyboard=True, input_field_placeholder='menu')
 
+yes_no_keyboard = ReplyKeyboardMarkup(keyboard=[
+    [KeyboardButton(text='Да')],
+    [KeyboardButton(text='Нет')]], resize_keyboard=True, input_field_placeholder='menu')
 
 app_keyboard = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Make аккаунт')],
@@ -27,7 +30,8 @@ push_button = ReplyKeyboardMarkup(keyboard=[
 ], resize_keyboard=True)
 
 make_acc = ReplyKeyboardMarkup(keyboard=[
-    [KeyboardButton(text='Уже есть аккаунт в Make')],
+    [KeyboardButton(text='Уже есть аккаунт')],
+    [KeyboardButton(text='Заполнить новый аккаунт')]
 ], resize_keyboard=True, input_field_placeholder='menu')
 
 button_to_add_accs = InlineKeyboardMarkup(inline_keyboard=[
@@ -35,7 +39,7 @@ button_to_add_accs = InlineKeyboardMarkup(inline_keyboard=[
 ])
 
 services_keyboard = ReplyKeyboardMarkup(keyboard=[
-    [KeyboardButton(text='tiktok'), KeyboardButton(text='google-drive'), KeyboardButton(text='instagram')],
+    [KeyboardButton(text='tiktok'), KeyboardButton(text='google_drive'), KeyboardButton(text='instagram')],
     [KeyboardButton(text='youtube'), KeyboardButton(text='telegram')],
     [KeyboardButton(text='сохранить')]
 ], resize_keyboard=True, input_field_placeholder='menu')
