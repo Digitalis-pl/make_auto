@@ -101,6 +101,7 @@ class Database:
             id INTEGER PRIMARY KEY,
             user_id INTEGER NOT NULL,
             service TEXT NOT NULL,
+            name TEXT,
             client_id TEXT,
             client_secrets TEXT,
             gd_folder_id TEXT,
@@ -120,16 +121,16 @@ class Database:
             accountLabel TEXT NOT NULL)
             """)
 
-    async def insert_table(self, user_id=None, service=None, client_id=None, client_secrets=None,
+    async def insert_table(self, user_id=None, service=None, name=None, client_id=None, client_secrets=None,
                            tg_bot_token=None, tg_chat_id=None, fb_inst_page_id=None,
                            yt_channel_id=None, tt_account_id=None, gd_folder_id=None):
         with self.connection:
             return self.cursor.execute(
                 """INSERT INTO accs
-                (user_id, service, client_id, client_secrets, gd_folder_id, user_id, tg_bot_token, 
+                (user_id, service, name, client_id, client_secrets, gd_folder_id, user_id, tg_bot_token, 
                 tg_chat_id, fb_inst_page_id, yt_channel_id, tt_account_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (user_id, service, client_id, client_secrets, gd_folder_id, user_id, tg_bot_token,
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (user_id, service, name, client_id, client_secrets, gd_folder_id, user_id, tg_bot_token,
                  tg_chat_id, fb_inst_page_id, yt_channel_id, tt_account_id))
 
     async def insert_connection_table(self, service=None, client_id=None, user_id=None, client_secrets=None):
@@ -232,6 +233,18 @@ class Database:
     async def show_acc(self, user_id, service):
         with self.connection:
             self.cursor.execute(f'SELECT * FROM {service} WHERE user_id=?', (user_id,))
+            columns = [column[0] for column in self.cursor.description]
+            values = self.cursor.fetchall()
+            info = [dict(zip(columns, row)) for row in values]
+            for el in info:
+                for i in list(el.keys()):
+                    if el[i] is None or i in ['id', 'user_id']:
+                        del el[i]
+            return info
+
+    async def show_saved_acc(self, user_id, service, name):
+        with self.connection:
+            self.cursor.execute(f'SELECT * FROM {service} WHERE user_id=? and name=?', (user_id, name,))
             columns = [column[0] for column in self.cursor.description]
             values = self.cursor.fetchall()
             info = [dict(zip(columns, row)) for row in values]

@@ -46,6 +46,6 @@ class UserInfoForMake(StatesGroup):
 
 class TemporaryData(StatesGroup):
     my_session_data = State()
-    yes_no = State()
+    my_acc_data = State()
 
 

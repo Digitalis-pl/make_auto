@@ -35,9 +35,10 @@ def create_keyboard(el_list):
 
 async def already_have_acc(message: Message, state: FSMContext):
     acc_list = await db.show_acc(message.from_user.id, message.text)
-    print(acc_list)
     if len(acc_list) > 0:
         kb = create_keyboard(acc_list)
+        await state.update_data(service=message.text)
+        await state.set_state(TemporaryData.my_acc_data.state)
         return await message.answer('у вас есть сохраненные аккаунты, хотите использовать их или записать новый?',
                                     reply_markup=kb.as_markup(resize_keyboard=True))
     else:
@@ -111,11 +112,23 @@ async def choose_make_info(message: Message, state: FSMContext):
 @router.message(TemporaryData.my_session_data)
 async def get_acc_info(message: Message, state: FSMContext):
     my_acc = await db.show_my_make_acc(message.from_user.id, message.text)
-    print(my_acc)
     await db.insert_temporary_make_table(**my_acc[0])
     await state.clear()
+    await state.set_state()
     await message.answer('Вы можете посмотреть всю информацию при нажатии кнопки Make аккаунт',
                          reply_markup=start_keyboard)
+
+
+@router.message(TemporaryData.my_acc_data)
+async def take_my_acc(message: Message, state: FSMContext):
+    await state.set_state(UInfo.service.state)
+    data = await state.get_data()
+    my_acc = await db.show_saved_acc(message.from_user.id, data['service'], message.text)
+    my_acc[0]['user_id'] = message.from_user.id
+    my_acc[0]['service'] = data['service']
+    await db.insert_table(**my_acc[0])
+    await state.set_data({})
+    await message.answer('аккаунт добавлен, хотите добавить дополнительный сервис', reply_markup=services_keyboard)
 
 
 @router.message(UserInfoForMake.make_url)
